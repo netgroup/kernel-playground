@@ -160,3 +160,59 @@ cd /opt/kernel-playground
 ---
 
 *Note:* Make sure you have Podman installed and properly configured on your system before starting.
+
+---
+
+## Building eBPF Programs (Optional)
+
+`src/c/` contains an example eBPF/XDP program (`netprog.bpf.c`) that can be used as a starting point for your own eBPF project, similarly to how `kernel/modules/snf_lkm.c` serves as a starting point for kernel module development.
+
+If your project includes eBPF programs, you can compile them inside the container using the toolchain provided in `src/c/`. From inside the container, run:
+
+```bash
+cd /opt/kernel-playground/src/c
+make
+make install
+```
+
+The `make install` step copies the compiled `.bpf.o` files into the shared folder, making them accessible from inside the VM at `/mnt/shared`.
+
+---
+
+## Running the VM
+
+Once inside the container, you can boot the QEMU VM using the freshly compiled kernel. Navigate to the VM folder and run the provided script:
+
+```bash
+cd /opt/kernel-playground/tests/vm
+./run.sh
+```
+
+This will start a QEMU/KVM instance booting the custom kernel built in the previous steps.
+
+> **Note:** `run.sh` requires KVM support (`/dev/kvm`) to be available inside the container. If you are running on a bare-metal Linux host, this is available by default. If you are running inside a virtual machine (VMware, VirtualBox, QEMU/KVM, or any other hypervisor), you need to enable nested virtualization in your hypervisor settings before `/dev/kvm` will be accessible.
+
+---
+
+## Accessing the VM
+
+To log into the running VM, open another terminal, enter the container, and run:
+
+```bash
+cd /opt/kernel-playground/tests/vm
+./enter.sh
+```
+
+This connects to the VM via SSH on port 10022 using the key generated during the image creation step.
+
+---
+
+## Loading the Kernel Module
+
+Once logged into the VM, the shared folder is automatically mounted at `/mnt/shared`. You can load the kernel module with:
+
+```bash
+insmod /mnt/shared/snf_lkm.ko
+```
+
+> **Important:** the module is compiled for the custom kernel built by kernel-playground. It cannot be loaded on your host Ubuntu system because the kernel versions differ. Always load the module from inside the VM, which boots exactly the kernel the module was compiled for.
